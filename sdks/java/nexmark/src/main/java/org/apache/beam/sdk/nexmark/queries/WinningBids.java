@@ -253,7 +253,7 @@ public class WinningBids extends PTransform<PCollection<Event>, PCollection<Auct
         if (bidWindows != null) {
           List<AuctionOrBidWindow> toBeMerged = new ArrayList<>();
           for (AuctionOrBidWindow bidWindow : bidWindows) {
-            if (bidWindow.start().isBefore(auctionWindow.end())) {
+            if (bidWindow.start().isBefore(auctionWindow.maxTimestamp())) {
               toBeMerged.add(bidWindow);
             }
             // else: This bid window will remain until its expire time, at which point it

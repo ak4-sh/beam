@@ -345,8 +345,13 @@ public class ReduceFnRunner<K, InputT, OutputT, W extends BoundedWindow> {
     Set<W> windowsToConsider = windowsThatAreOpen(windows);
 
     // Process each element, using the updated activeWindows determined by mergeWindows.
-    for (WindowedValue<InputT> value : values) {
-      processElement(windowToMergeResult, value);
+    try {
+      for (WindowedValue<InputT> value : values) {
+        processElement(windowToMergeResult, value);
+      }
+    } catch (final Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("RR exception for processing " + values + ", windowToMerge: " + windowToMergeResult);
     }
 
     // Now that we've processed the elements, see if any of the windows need to fire.
