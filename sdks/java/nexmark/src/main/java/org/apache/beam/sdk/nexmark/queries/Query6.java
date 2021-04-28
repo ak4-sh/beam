@@ -32,10 +32,7 @@ import org.apache.beam.sdk.transforms.Combine;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.windowing.AfterPane;
-import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
-import org.apache.beam.sdk.transforms.windowing.Repeatedly;
-import org.apache.beam.sdk.transforms.windowing.Window;
+import org.apache.beam.sdk.transforms.windowing.*;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
@@ -132,11 +129,12 @@ public class Query6 extends NexmarkQuery {
                 }))
 
         // Re-window to update on every wining bid.
-        .apply(
-            Window.<KV<Long, Bid>>into(new GlobalWindows())
-                .triggering(Repeatedly.forever(AfterPane.elementCountAtLeast(1)))
-                .accumulatingFiredPanes()
-                .withAllowedLateness(Duration.ZERO))
+            .apply(
+                    Window.<KV<Long, Bid>>into(new GlobalWindows())
+                            .withTimestampCombiner(TimestampCombiner.EARLIEST)
+                            .triggering(Repeatedly.forever(AfterPane.elementCountAtLeast(1)))
+                            .accumulatingFiredPanes()
+                            .withAllowedLateness(Duration.ZERO))
 
         // Find the average of last 10 winning bids for each seller.
         .apply(Combine.perKey(new MovingMeanSellingPrice(10)))
