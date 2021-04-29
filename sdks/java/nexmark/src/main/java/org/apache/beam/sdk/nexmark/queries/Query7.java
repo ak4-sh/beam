@@ -26,6 +26,7 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Max;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.SlidingWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionView;
@@ -57,8 +58,8 @@ public class Query7 extends NexmarkQuery {
         events
             .apply(JUST_BIDS)
             .apply(
-                Window.into(
-                    FixedWindows.of(Duration.standardSeconds(configuration.windowSizeSec))));
+                Window.into(SlidingWindows.of(Duration.standardSeconds(configuration.windowSizeSec))
+                .every(Duration.standardSeconds(configuration.windowPeriodSec))));
 
     // Find the largest price in all bids.
     // NOTE: It would be more efficient to write this query much as we did for Query5, using
