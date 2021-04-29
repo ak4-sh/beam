@@ -67,9 +67,10 @@ public class Query7 extends NexmarkQuery {
     // requres an additional scan per window, with the associated cost of snapshotted state and
     // its I/O. We'll keep this implementation since it illustrates the use of side inputs.
     final PCollectionView<Long> maxPriceView =
-        slidingBids
-            .apply("BidToPrice", BID_TO_PRICE)
-            .apply(Max.longsGlobally().asSingletonView());
+            slidingBids
+                    .apply("BidToPrice", BID_TO_PRICE)
+                    .apply(Max.longsGlobally()
+                            .withFanout(configuration.fanout).asSingletonView());
 
     return slidingBids
         // Select all bids which have that maximum price (there may be more than one).
