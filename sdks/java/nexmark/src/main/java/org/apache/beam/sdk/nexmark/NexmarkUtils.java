@@ -277,9 +277,13 @@ public class NexmarkUtils {
         {
           final long normalDelayUs = unit.rateToPeriodUs(firstRate / numGenerators);
           final long burstyDelayUS = unit.rateToPeriodUs(nextRate / numGenerators);
-          long[] interEventDelayUs = new long[2];
-          interEventDelayUs[0] = normalDelayUs;
-          interEventDelayUs[1] = burstyDelayUS;
+          long[] interEventDelayUs = new long[burstyN];
+
+          for (int i = 0; i < burstyN; i++) {
+            interEventDelayUs[i] = normalDelayUs;
+          }
+          interEventDelayUs[burstyN - 1] = burstyDelayUS;
+
           LOG.info("Normal delay: {}, Bursty delay: {}", normalDelayUs, burstyDelayUS);
           return interEventDelayUs;
 
