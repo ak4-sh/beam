@@ -275,7 +275,15 @@ public class NexmarkUtils {
         }
         case BURSTY:
         {
+          final long normalDelayUs = unit.rateToPeriodUs(firstRate / numGenerators);
+          final long burstyDelayUS = unit.rateToPeriodUs(nextRate / numGenerators);
+          long[] interEventDelayUs = new long[2];
+          interEventDelayUs[0] = normalDelayUs;
+          interEventDelayUs[1] = burstyDelayUS;
+          LOG.info("Normal delay: {}, Bursty delay: {}", normalDelayUs, burstyDelayUS);
+          return interEventDelayUs;
 
+          /*
           final long normalDelayUs = unit.rateToPeriodUs(firstRate) * numGenerators;
           final long burstyDelayUS = unit.rateToPeriodUs(nextRate) * numGenerators;
           long[] interEventDelayUs = new long[burstyN];
@@ -287,6 +295,7 @@ public class NexmarkUtils {
 
           LOG.info("Normal delay: {}, Bursty delay: {}", normalDelayUs, burstyDelayUS);
           return interEventDelayUs;
+          */
         }
         case INC_BURSTY:
         {
