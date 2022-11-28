@@ -244,7 +244,7 @@ public class NexmarkUtils {
                                     int burstyN, int incStepN) {
       if (firstRate == nextRate) {
         long[] interEventDelayUs = new long[1];
-        interEventDelayUs[0] = unit.rateToPeriodUs(firstRate / numGenerators);
+        interEventDelayUs[0] = unit.rateToPeriodUs(firstRate) * numGenerators;
         return interEventDelayUs;
       }
 
@@ -261,8 +261,12 @@ public class NexmarkUtils {
         {
           double mid = (firstRate + nextRate) / 2.0;
           double amp = (firstRate - nextRate) / 2.0; // may be -ve
-          long[] interEventDelayUs = new long[N];
-          for (int i = 0; i < N; i++) {
+          final int totalStep = burstyN * N;
+          long[] interEventDelayUs = new long[totalStep];
+          for (int i = 0; i < totalStep - N; i++) {
+            interEventDelayUs[i] = unit.rateToPeriodUs(firstRate) * numGenerators;
+          }
+          for (int i = totalStep - N; i < totalStep; i++) {
             double r = (2.0 * Math.PI * i) / N;
             double rate = mid + amp * Math.cos(r);
             interEventDelayUs[i] = unit.rateToPeriodUs(Math.round(rate)) * numGenerators;
@@ -275,8 +279,8 @@ public class NexmarkUtils {
         }
         case BURSTY:
         {
-          final long normalDelayUs = unit.rateToPeriodUs(firstRate / numGenerators);
-          final long burstyDelayUS = unit.rateToPeriodUs(nextRate / numGenerators);
+          final long normalDelayUs = unit.rateToPeriodUs(firstRate) * numGenerators;
+          final long burstyDelayUS = unit.rateToPeriodUs(nextRate) * numGenerators;
           long[] interEventDelayUs = new long[burstyN];
 
           for (int i = 0; i < burstyN; i++) {
@@ -303,17 +307,17 @@ public class NexmarkUtils {
         }
         case INC_BURSTY:
         {
-          final int totalStep = incStepN; // burstyN * incStepN;
+          final int totalStep = burstyN * incStepN; // incStepN;
           final int ratePerStep = (nextRate - firstRate) / incStepN;
-          final int burstyStartStep = 0; //totalStep / 2 - (incStepN / 2);
-          final int burstyEndStep = totalStep; // burstyStartStep + incStepN;
-          final long normalDelayUs = unit.rateToPeriodUs(firstRate / numGenerators);
+          final int burstyStartStep = totalStep - incStepN; // burstyN
+          final int burstyEndStep = totalStep; // burstyStartStep + incStepN; // totalStep
+          final long normalDelayUs = unit.rateToPeriodUs(firstRate) * numGenerators;
 
           int burstyCnt = 1;
           long[] interEventDelayUs = new long[totalStep];
           for (int i = 0; i < totalStep; i++) {
             if (i >= burstyStartStep && i < burstyEndStep) {
-              interEventDelayUs[i] = unit.rateToPeriodUs((firstRate + ratePerStep * burstyCnt) / numGenerators);
+              interEventDelayUs[i] = unit.rateToPeriodUs(firstRate + ratePerStep * burstyCnt) * numGenerators);
               LOG.info("Rate {} at {}, delay: {}", firstRate + ratePerStep * burstyCnt, i, interEventDelayUs[i]);
               burstyCnt += 1;
             } else {
