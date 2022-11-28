@@ -317,7 +317,7 @@ public class NexmarkUtils {
           long[] interEventDelayUs = new long[totalStep];
           for (int i = 0; i < totalStep; i++) {
             if (i >= burstyStartStep && i < burstyEndStep) {
-              interEventDelayUs[i] = unit.rateToPeriodUs(firstRate + ratePerStep * burstyCnt) * numGenerators);
+              interEventDelayUs[i] = unit.rateToPeriodUs(firstRate + ratePerStep * burstyCnt) * numGenerators;
               LOG.info("Rate {} at {}, delay: {}", firstRate + ratePerStep * burstyCnt, i, interEventDelayUs[i]);
               burstyCnt += 1;
             } else {
