@@ -119,7 +119,7 @@ public class GeneratorConfig implements Serializable {
     long epochPeriodMs = 0;
     if (interEventDelayUs.length > 1) {
       for (long interEventDelayU : interEventDelayUs) {
-        long numEventsForThisCycle = (stepLengthSec * 1_000_000L) / interEventDelayU;
+        long numEventsForThisCycle = (stepLengthSec * 1_000_000L) / Math.max(interEventDelayU, 1);
         eventsPerEpoch += numEventsForThisCycle;
         epochPeriodMs += (numEventsForThisCycle * interEventDelayU) / 1000L;
       }

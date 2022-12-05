@@ -1,5 +1,6 @@
 #!/bin/bash
 
+git pull
 
 ./build_kafka.sh
 
@@ -13,3 +14,7 @@ mvn install:install-file -Dfile=build/libs/beam-sdks-java-nexmark-2.6.0-SNAPSHOT
 -Dversion=2.6.0-SNAPSHOT \
 -Dpackaging=jar \
 -DgeneratePom=true
+
+pushd ../nexmark-source-gen/
+mvn clean install
+popd

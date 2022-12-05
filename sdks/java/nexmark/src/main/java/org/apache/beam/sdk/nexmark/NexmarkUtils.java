@@ -263,7 +263,7 @@ public class NexmarkUtils {
           double amp = (firstRate - nextRate) / 2.0; // may be -ve
           final int totalStep = burstyN * N;
           long[] interEventDelayUs = new long[totalStep];
-          for (int i = 0; i < totalStep - N; i++) {
+          for (int i = 0; i < totalStep; i++) {
             interEventDelayUs[i] = unit.rateToPeriodUs(firstRate) * numGenerators;
           }
           for (int i = totalStep - N; i < totalStep; i++) {
