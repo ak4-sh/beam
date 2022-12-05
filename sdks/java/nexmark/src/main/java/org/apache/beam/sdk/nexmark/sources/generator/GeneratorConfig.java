@@ -277,7 +277,7 @@ public class GeneratorConfig implements Serializable {
     long n = eventNumber % eventsPerEpoch;
     long offsetInEpochMs = 0;
     for (long interEventDelayU : interEventDelayUs) {
-      long numEventsForThisCycle = (stepLengthSec * 1_000_000L) / interEventDelayU;
+      long numEventsForThisCycle = (stepLengthSec * 1_000_000L) / Math.max(interEventDelayU, 1);
       if (n < numEventsForThisCycle) {
         long offsetInCycleUs = n * interEventDelayU;
         long timestamp =
