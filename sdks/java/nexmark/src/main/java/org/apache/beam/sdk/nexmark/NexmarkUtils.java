@@ -267,7 +267,7 @@ public class NexmarkUtils {
             interEventDelayUs[i] = unit.rateToPeriodUs(firstRate) * numGenerators;
           }
           for (int i = totalStep - N; i < totalStep; i++) {
-            double r = (2.0 * Math.PI * i) / N;
+            double r = (2.0 * Math.PI * (i-totalStep)) / N;
             double rate = mid + amp * Math.cos(r);
             interEventDelayUs[i] = unit.rateToPeriodUs(Math.round(rate)) * numGenerators;
             LOG.info("firstRate: {}, nextRate: {}, r: {}, rate: {}, interEventDelayUs[{}]: {}",
@@ -316,8 +316,8 @@ public class NexmarkUtils {
           int burstyCnt = 1;
           long[] interEventDelayUs = new long[totalStep];
           for (int i = 0; i < totalStep; i++) {
-            if (i >= burstyStartStep && i < burstyEndStep) {
-              interEventDelayUs[i] = unit.rateToPeriodUs(firstRate + ratePerStep * burstyCnt) * numGenerators;
+            if (i >= burstyStartStep) {
+              interEventDelayUs[i] = unit.rateToPeriodUs(firstRate + (long) ratePerStep * burstyCnt) * numGenerators;
               LOG.info("Rate {} at {}, delay: {}", firstRate + ratePerStep * burstyCnt, i, interEventDelayUs[i]);
               burstyCnt += 1;
             } else {
@@ -368,13 +368,13 @@ public class NexmarkUtils {
           n = 2;
           break;
         case SINE:
-          n = N;
+          n = burstyN * N;
           break;
         case BURSTY:
           n = burstyN;
           break;
         case INC_BURSTY:
-          n = incStepN; // burstyN * incStepN;
+          n = burstyN * incStepN; // burstyN * incStepN;
           break;
         case FLUCTUATION:
           n = FLUCT_N;
