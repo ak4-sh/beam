@@ -75,6 +75,7 @@ import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -809,8 +810,12 @@ public class NexmarkLauncher<OptionT extends NexmarkOptions> {
     checkArgument((options.getBootstrapServers() != null), "Missing --bootstrapServers");
     NexmarkUtils.console("Reading events from Kafka Topic %s", options.getKafkaTopic());
 
+    Map<String, Object> kafkaConsumerConfig = new HashMap<>();
+    kafkaConsumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
     KafkaIO.Read<Long, Event> read =
         KafkaIO.<Long, Event>read()
+            .updateConsumerProperties(kafkaConsumerConfig)
             .withBootstrapServers(options.getBootstrapServers())
             .withTopic(options.getKafkaTopic())
                 /*
@@ -823,7 +828,7 @@ public class NexmarkLauncher<OptionT extends NexmarkOptions> {
             .withValueDeserializer(EventDeserializer.class)
                 .withTimestampPolicyFactory(new KafkaTimestampPolicyFactory())
                 //.withCreateTime(Duration.standardSeconds(5))
-            .withStartReadTime(now);
+            .withStartReadTime(now == null ? new Instant(0L) : now);
             //.withMaxNumRecords(
             //    options.getNumEvents() != null ? options.getNumEvents() : Long.MAX_VALUE);
 
