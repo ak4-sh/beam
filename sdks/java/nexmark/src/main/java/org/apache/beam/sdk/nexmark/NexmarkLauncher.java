@@ -812,6 +812,9 @@ public class NexmarkLauncher<OptionT extends NexmarkOptions> {
 
     Map<String, Object> kafkaConsumerConfig = new HashMap<>();
     kafkaConsumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    kafkaConsumerConfig.put(ConsumerConfig.GROUP_ID_CONFIG, options.getKafkaConsumerGroup());
+    kafkaConsumerConfig.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+    kafkaConsumerConfig.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, 10485760);
 
     KafkaIO.Read<Long, Event> read =
         KafkaIO.<Long, Event>read()
@@ -826,11 +829,14 @@ public class NexmarkLauncher<OptionT extends NexmarkOptions> {
                 */
             .withKeyDeserializer(LongDeserializer.class)
             .withValueDeserializer(EventDeserializer.class)
-                .withTimestampPolicyFactory(new KafkaTimestampPolicyFactory())
+                .withTimestampPolicyFactory(new KafkaTimestampPolicyFactory());
                 //.withCreateTime(Duration.standardSeconds(5))
-            .withStartReadTime(now == null ? new Instant(0L) : now);
             //.withMaxNumRecords(
             //    options.getNumEvents() != null ? options.getNumEvents() : Long.MAX_VALUE);
+
+    if (now != null) {
+      read = read.withStartReadTime(now);
+    }
 
     return p.apply(queryName + ".ReadKafkaEvents", read.withoutMetadata())
             .apply(queryName + "kvToEvent", ParDo.of(KV_TO_EVENT));

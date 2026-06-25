@@ -470,6 +470,13 @@ public interface NexmarkOptions
 
   void setBootstrapServers(String value);
 
+  @Description("Kafka consumer group used for Kafka source reads.")
+  @Nullable
+  @Default.String("disaggregated-streaming")
+  String getKafkaConsumerGroup();
+
+  void setKafkaConsumerGroup(String value);
+
   @Description("Same as --numWorkers in DataflowPipelineWorkerPoolOptions")
   int getNumWorkers();
 
