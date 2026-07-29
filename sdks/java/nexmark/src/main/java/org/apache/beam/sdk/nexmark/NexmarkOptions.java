@@ -47,6 +47,24 @@ public interface NexmarkOptions
 
   void setSourceType(NexmarkUtils.SourceType sourceType);
 
+  @Description("Kafka value wire format.")
+  @Default.Enum("BEAM_EVENT")
+  NexmarkUtils.KafkaInputFormat getKafkaInputFormat();
+
+  void setKafkaInputFormat(NexmarkUtils.KafkaInputFormat inputFormat);
+
+  @Description("HoloStream Auction topic used by raw-event Q6.")
+  @Default.String("nexmark-auction")
+  String getHoloStreamAuctionTopic();
+
+  void setHoloStreamAuctionTopic(String topic);
+
+  @Description("HoloStream Bid topic used by raw-event Q6.")
+  @Default.String("nexmark-bid")
+  String getHoloStreamBidTopic();
+
+  void setHoloStreamBidTopic(String topic);
+
   @Description("Prefix for input files if using avro input")
   @Nullable
   String getInputPath();

@@ -35,12 +35,14 @@ import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.coders.ByteArrayCoder;
 import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
+import org.apache.beam.sdk.io.kafka.KafkaRecord;
 import org.apache.beam.sdk.io.kafka.TimestampPolicy;
 import org.apache.beam.sdk.io.kafka.TimestampPolicyFactory;
 import org.apache.beam.sdk.metrics.DistributionResult;
@@ -65,16 +67,17 @@ import org.apache.beam.sdk.nexmark.queries.sql.SqlQuery5;
 import org.apache.beam.sdk.nexmark.queries.sql.SqlQuery7;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.util.CoderUtils;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TimestampedValue;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.LongDeserializer;
@@ -805,10 +808,80 @@ public class NexmarkLauncher<OptionT extends NexmarkOptions> {
         }
       };
 
+  /** Remove Kafka metadata from one already-deserialized HoloStream Nexmark event. */
+  private static final class HoloStreamRecordToEvent
+      extends DoFn<KafkaRecord<byte[], Event>, Event> {
+
+    @ProcessElement
+    public void processElement(ProcessContext context) {
+      context.output(context.element().getKV().getValue());
+    }
+  }
+
+  private PCollection<Event> sourceEventsFromHoloStreamKafka(Pipeline pipeline) {
+    checkArgument(
+        options.getQuery() != null && options.getQuery() == 6,
+        "HOLOSTREAM_MUS currently supports raw-event Query 6 only");
+
+    Map<String, Object> kafkaConsumerConfig = new HashMap<>();
+    kafkaConsumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    kafkaConsumerConfig.put(ConsumerConfig.GROUP_ID_CONFIG, options.getKafkaConsumerGroup());
+    kafkaConsumerConfig.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+    kafkaConsumerConfig.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, 10485760);
+
+    PCollection<Event> auctions =
+        readHoloStreamTopic(
+            pipeline,
+            "ReadHoloStreamAuctions",
+            options.getHoloStreamAuctionTopic(),
+            HoloStreamEventDecoder.EventType.AUCTION,
+            kafkaConsumerConfig);
+    PCollection<Event> bids =
+        readHoloStreamTopic(
+            pipeline,
+            "ReadHoloStreamBids",
+            options.getHoloStreamBidTopic(),
+            HoloStreamEventDecoder.EventType.BID,
+            kafkaConsumerConfig);
+
+    return PCollectionList.of(auctions)
+        .and(bids)
+        .apply(queryName + ".FlattenHoloStreamEvents", Flatten.pCollections())
+        .setCoder(Event.CODER);
+  }
+
+  private PCollection<Event> readHoloStreamTopic(
+      Pipeline pipeline,
+      String transformName,
+      String topic,
+      HoloStreamEventDecoder.EventType eventType,
+      Map<String, Object> kafkaConsumerConfig) {
+    Map<String, Object> topicConsumerConfig = new HashMap<>(kafkaConsumerConfig);
+    topicConsumerConfig.put(HoloStreamEventDeserializer.EVENT_TYPE_CONFIG, eventType.name());
+    KafkaIO.Read<byte[], Event> read =
+        KafkaIO.<byte[], Event>read()
+            .updateConsumerProperties(topicConsumerConfig)
+            .withBootstrapServers(options.getBootstrapServers())
+            .withTopic(topic)
+            .withKeyDeserializerAndCoder(HoloStreamKafkaKeyDeserializer.class, ByteArrayCoder.of())
+            .withValueDeserializerAndCoder(HoloStreamEventDeserializer.class, Event.CODER)
+            .withTimestampPolicyFactory(new HoloStreamTimestampPolicyFactory(eventType));
+    return pipeline
+        .apply(queryName + "." + transformName, read)
+        .apply(
+            queryName + ".Extract" + eventType,
+            ParDo.of(new HoloStreamRecordToEvent()))
+        .setCoder(Event.CODER);
+  }
+
   /** Return source of events from Kafka. */
   private PCollection<Event> sourceEventsFromKafka(Pipeline p, final Instant now) {
     checkArgument((options.getBootstrapServers() != null), "Missing --bootstrapServers");
     NexmarkUtils.console("Reading events from Kafka Topic %s", options.getKafkaTopic());
+
+    if (options.getKafkaInputFormat() == NexmarkUtils.KafkaInputFormat.HOLOSTREAM_MUS) {
+      return sourceEventsFromHoloStreamKafka(p);
+    }
 
     Map<String, Object> kafkaConsumerConfig = new HashMap<>();
     kafkaConsumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");

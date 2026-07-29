@@ -97,6 +97,14 @@ public class NexmarkUtils {
     KAFKA
   }
 
+  /** Wire format used by a Kafka Nexmark source. */
+  public enum KafkaInputFormat {
+    /** Apache Beam {@link org.apache.beam.sdk.nexmark.model.Event#CODER}. */
+    BEAM_EVENT,
+    /** MUS tuples emitted by HoloStream's KafkaCollector. */
+    HOLOSTREAM_MUS
+  }
+
   /** Possible sinks for query results. */
   public enum SinkType {
     /** Discard all results. */
