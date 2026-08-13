@@ -21,6 +21,11 @@ applyJavaNature()
 
 description = "Apache Beam :: SDKs :: Java :: Nexmark"
 
+// The legacy BigQuery test depends on unpublished test fixtures from the GCP IO module. Keep it
+// out of this standalone Java 8 build; production Nexmark code and the HoloStream adapter tests do
+// not use those fixtures.
+sourceSets.test.java.exclude "**/PerfsToBigQueryTest.java"
+
 // When running via Gradle, this property can be used to pass commandline arguments
 // to the nexmark launch
 def nexmarkArgsProperty = "nexmark.args"
@@ -31,7 +36,7 @@ def nexmarkArgs = project.hasProperty(nexmarkArgsProperty) ?
 def nexmarkRunnerProperty = "nexmark.runner"
 def nexmarkRunnerDependency = (project.hasProperty(nexmarkRunnerProperty)
         ? project.getProperty(nexmarkRunnerProperty)
-        : ":beam-runners-direct-java")
+        : null)
 def shouldProvideSpark = ":beam-runners-spark".equals(nexmarkRunnerDependency)
 
 configurations {
@@ -43,12 +48,16 @@ configurations {
 
 dependencies {
   compile library.java.guava
+  compile project(path: ":beam-sdks-java-io-google-cloud-platform", configuration: "shadow")
+  compile project(path: ":beam-sdks-java-extensions-google-cloud-platform-core", configuration: "shadow")
+  compile project(path: ":beam-sdks-java-extensions-sql", configuration: "shadow")
+  compile library.java.google_api_services_bigquery
+  compile group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.11.429'
+  compile library.java.junit
+  compile library.java.hamcrest_core
+  compile library.java.hamcrest_library
   shadow project(path: ":beam-sdks-java-core", configuration: "shadow")
-  shadow project(path: ":beam-sdks-java-io-google-cloud-platform", configuration: "shadow")
-  shadow project(path: ":beam-sdks-java-extensions-google-cloud-platform-core", configuration: "shadow")
-  shadow project(path: ":beam-sdks-java-extensions-sql", configuration: "shadow")
   shadow project(path: ":beam-sdks-java-io-kafka", configuration: "shadow")
-  shadow library.java.google_api_services_bigquery
   shadow library.java.jackson_core
   shadow library.java.jackson_annotations
   shadow library.java.jackson_databind
@@ -57,19 +66,17 @@ dependencies {
   shadow library.java.slf4j_api
   shadow library.java.commons_lang3
   shadow library.java.kafka_clients
-  shadow project(path: ":beam-runners-direct-java", configuration: "shadow")
   shadow library.java.slf4j_jdk14
   provided library.java.junit
   provided library.java.hamcrest_core
-  shadow project(path: ":beam-sdks-java-io-google-cloud-platform", configuration: "shadow")
-  shadowTest project(path: ":beam-sdks-java-io-google-cloud-platform", configuration: "shadowTest")
   testCompile library.java.hamcrest_core
   testCompile library.java.hamcrest_library
-  shadow group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.11.429'
 
 
   gradleRun project(path: project.path, configuration: "shadow")
-  gradleRun project(path: nexmarkRunnerDependency, configuration: "shadow")
+  if (nexmarkRunnerDependency != null) {
+    gradleRun project(path: nexmarkRunnerDependency, configuration: "shadow")
+  }
 
   // The Spark runner requires the user to provide a Spark dependency. For self-contained
   // runs with the Spark runner, we can provide such a dependency. This is deliberately phrased

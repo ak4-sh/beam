@@ -27,7 +27,12 @@ plugins { id 'groovy' }
 
 // Dependencies on other plugins used when this plugin
 // is invoked
-repositories { jcenter() }
+repositories {
+  mavenLocal()
+  gradlePluginPortal()
+  mavenCentral()
+  jcenter()
+}
 
 dependencies {
   compile gradleApi()

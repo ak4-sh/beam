@@ -24,6 +24,7 @@ ext.summary = """Contains code shared across the Beam Java SDK Harness and Java 
 the Beam Portability Framework."""
 
 dependencies {
+  compile "junit:junit:4.12"
   compile library.java.guava
   shadow project(path: ":beam-model-pipeline", configuration: "shadow")
   shadow project(path: ":beam-model-fn-execution", configuration: "shadow")
