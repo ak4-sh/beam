@@ -97,6 +97,14 @@ public class NexmarkUtils {
     KAFKA
   }
 
+  /** Value encoding used by a Kafka event source. */
+  public enum KafkaInputFormat {
+    /** Beam's native {@link Event#CODER} encoding. */
+    BEAM_EVENT,
+    /** HoloStream's MUS tuple encoding split across Auction and Bid topics. */
+    HOLOSTREAM_MUS
+  }
+
   /** Possible sinks for query results. */
   public enum SinkType {
     /** Discard all results. */
