@@ -736,6 +736,19 @@ public class KafkaIOTest {
     p.run();
   }
 
+  @Test
+  public void testPartitionAlignedSplitsExposeEveryPartition() throws Exception {
+    UnboundedSource<KafkaRecord<Integer, Long>, ?> initial =
+        mkKafkaReadTransform(1000, null).withPartitionAlignedSplits().makeSource();
+
+    List<? extends UnboundedSource<KafkaRecord<Integer, Long>, ?>> splits =
+        initial.split(4, p.getOptions());
+
+    // mkKafkaReadTransform has two topics with ten partitions each. Partition-aligned mode keeps
+    // source parallelism independent from the runner-requested downstream parallelism of four.
+    assertEquals(20, splits.size());
+  }
+
   /** A timestamp function that uses the given value as the timestamp. */
   private static class ValueAsTimestampFn
       implements SerializableFunction<KV<Integer, Long>, Instant> {

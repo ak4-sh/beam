@@ -249,6 +249,7 @@ public class KafkaIO {
         .setConsumerFactoryFn(Read.KAFKA_CONSUMER_FACTORY_FN)
         .setConsumerConfig(Read.DEFAULT_CONSUMER_PROPERTIES)
         .setMaxNumRecords(Long.MAX_VALUE)
+        .setPartitionAlignedSplitsEnabled(false)
         .setCommitOffsetsInFinalizeEnabled(false)
         .setTimestampPolicyFactory(TimestampPolicyFactory.withProcessingTime())
         .build();
@@ -303,6 +304,8 @@ public class KafkaIO {
 
     abstract long getMaxNumRecords();
 
+    abstract boolean isPartitionAlignedSplitsEnabled();
+
     @Nullable
     abstract Duration getMaxReadTime();
 
@@ -338,6 +341,8 @@ public class KafkaIO {
       abstract Builder<K, V> setWatermarkFn(SerializableFunction<KafkaRecord<K, V>, Instant> fn);
 
       abstract Builder<K, V> setMaxNumRecords(long maxNumRecords);
+
+      abstract Builder<K, V> setPartitionAlignedSplitsEnabled(boolean enabled);
 
       abstract Builder<K, V> setMaxReadTime(Duration maxReadTime);
 
@@ -389,6 +394,17 @@ public class KafkaIO {
     public Read<K, V> withTopicPartitions(List<TopicPartition> topicPartitions) {
       checkState(getTopics().isEmpty(), "Only topics or topicPartitions can be set, not both");
       return toBuilder().setTopicPartitions(ImmutableList.copyOf(topicPartitions)).build();
+    }
+
+    /**
+     * Creates one initial source split for each discovered Kafka partition.
+     *
+     * <p>This is useful when the source must expose partition-level parallelism independently of
+     * the runner's downstream operator parallelism. The default behavior remains unchanged and
+     * returns at most the runner-requested number of splits.
+     */
+    public Read<K, V> withPartitionAlignedSplits() {
+      return toBuilder().setPartitionAlignedSplitsEnabled(true).build();
     }
 
     /**

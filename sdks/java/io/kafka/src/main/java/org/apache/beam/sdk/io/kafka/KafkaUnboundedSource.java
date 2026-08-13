@@ -83,7 +83,10 @@ public class KafkaUnboundedSource<K, V> extends UnboundedSource<KafkaRecord<K, V
         partitions.size() > 0,
         "Could not find any partitions. Please check Kafka configuration and topic names");
 
-    int numSplits = Math.min(desiredNumSplits, partitions.size());
+    int numSplits =
+        spec.isPartitionAlignedSplitsEnabled()
+            ? partitions.size()
+            : Math.min(desiredNumSplits, partitions.size());
     // set split to the number of partitions!
     //int numSplits = partitions.size();
     List<List<TopicPartition>> assignments = new ArrayList<>(numSplits);
